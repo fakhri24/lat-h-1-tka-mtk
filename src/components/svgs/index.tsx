@@ -16,3 +16,12 @@ export { VisualSoal16 } from './VisualSoal16';
 export { VisualSoal17 } from './VisualSoal17';
 export { VisualSoal19 } from './VisualSoal19';
 export { VisualSoal23 } from './VisualSoal23';
+
+export { VisualPaket2Soal8 } from './VisualPaket2Soal8';
+export { VisualPaket2Soal10 } from './VisualPaket2Soal10';
+export { VisualPaket2Soal12 } from './VisualPaket2Soal12';
+export { VisualPaket2Soal14 } from './VisualPaket2Soal14';
+export { VisualPaket2Soal15 } from './VisualPaket2Soal15';
+export { VisualPaket2Soal16 } from './VisualPaket2Soal16';
+export { VisualPaket2Soal22 } from './VisualPaket2Soal22';
+export { VisualPaket2Soal23 } from './VisualPaket2Soal23';

@@ -21,6 +21,14 @@ import {
   VisualSoal17,
   VisualSoal19,
   VisualSoal23,
+  VisualPaket2Soal8,
+  VisualPaket2Soal10,
+  VisualPaket2Soal12,
+  VisualPaket2Soal14,
+  VisualPaket2Soal15,
+  VisualPaket2Soal16,
+  VisualPaket2Soal22,
+  VisualPaket2Soal23,
 } from './svgs';
 
 interface QuestionViewProps {
@@ -105,6 +113,22 @@ export const QuestionView: React.FC<QuestionViewProps> = ({
         return <VisualSoal19 />;
       case 'soal-23':
         return <VisualSoal23 />;
+      case 'p2-soal-8':
+        return <VisualPaket2Soal8 />;
+      case 'p2-soal-10':
+        return <VisualPaket2Soal10 />;
+      case 'p2-soal-12':
+        return <VisualPaket2Soal12 />;
+      case 'p2-soal-14':
+        return <VisualPaket2Soal14 />;
+      case 'p2-soal-15':
+        return <VisualPaket2Soal15 />;
+      case 'p2-soal-16':
+        return <VisualPaket2Soal16 />;
+      case 'p2-soal-22':
+        return <VisualPaket2Soal22 />;
+      case 'p2-soal-23':
+        return <VisualPaket2Soal23 />;
       default:
         return null;
     }

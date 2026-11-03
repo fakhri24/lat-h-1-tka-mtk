@@ -16,13 +16,17 @@ import {
   X,
   PanelTopClose,
   FileDown,
+  Layers,
 } from 'lucide-react';
 import { UserAnswerState } from '../types/question';
 
 interface FloatingMenuProps {
+  activePaket: 1 | 2;
+  onChangePaket: (paket: 1 | 2) => void;
+  currentIndex: number;
   currentQuestionId: number;
-  totalQuestions: number;
-  onSelectQuestion: (id: number) => void;
+  questionIds: number[];
+  onSelectQuestionId: (id: number) => void;
   onPrev: () => void;
   onNext: () => void;
   answers: UserAnswerState;
@@ -42,9 +46,12 @@ interface FloatingMenuProps {
 }
 
 export const FloatingMenu: React.FC<FloatingMenuProps> = ({
+  activePaket,
+  onChangePaket,
+  currentIndex,
   currentQuestionId,
-  totalQuestions,
-  onSelectQuestion,
+  questionIds,
+  onSelectQuestionId,
   onPrev,
   onNext,
   answers,
@@ -64,6 +71,8 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isMinimizedToCorner, setIsMinimizedToCorner] = useState<boolean>(false);
+
+  const totalQuestions = questionIds.length;
 
   // If teacher hides even the floating pill, render a super subtle hover-reveal corner button
   if (isMinimizedToCorner && !isOpen) {
@@ -85,11 +94,39 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
     <>
       {/* Compact Floating Trigger Pill in Top-Right Corner */}
       <div className="fixed top-3 right-4 z-40 flex items-center gap-1.5 select-none">
+        {/* Quick Paket Switcher Pill */}
+        <div className="flex items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 rounded-full shadow-sm p-0.5">
+          <button
+            type="button"
+            onClick={() => onChangePaket(1)}
+            data-paket-btn="1"
+            className={`px-2.5 py-1 rounded-full font-extrabold text-xs transition ${
+              activePaket === 1
+                ? 'bg-brand-600 text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            Paket 1 (25)
+          </button>
+          <button
+            type="button"
+            onClick={() => onChangePaket(2)}
+            data-paket-btn="2"
+            className={`px-2.5 py-1 rounded-full font-extrabold text-xs transition ${
+              activePaket === 2
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            Paket 2 (9)
+          </button>
+        </div>
+
         {/* Quick Prev / Next Arrows */}
         <div className="flex items-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 rounded-full shadow-sm p-0.5">
           <button
             type="button"
-            disabled={currentQuestionId <= 1}
+            disabled={currentIndex <= 0}
             onClick={onPrev}
             title="Soal Sebelumnya"
             className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 disabled:opacity-30 disabled:pointer-events-none transition"
@@ -104,12 +141,14 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
           >
             <Grid className="w-3.5 h-3.5 text-brand-600 dark:text-sky-400" />
             <span>
-              {currentQuestionId} / {totalQuestions}
+              {activePaket === 2
+                ? `No. ${currentQuestionId} (${currentIndex + 1}/${totalQuestions})`
+                : `${currentQuestionId} / ${totalQuestions}`}
             </span>
           </button>
           <button
             type="button"
-            disabled={currentQuestionId >= totalQuestions}
+            disabled={currentIndex >= totalQuestions - 1}
             onClick={onNext}
             title="Soal Selanjutnya"
             className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 disabled:opacity-30 disabled:pointer-events-none transition"
@@ -148,7 +187,7 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
         </button>
       </div>
 
-      {/* Popover / Drawer Panel for Jumping 1-25 & Projector Controls */}
+      {/* Popover / Drawer Panel for Jumping Questions & Projector Controls */}
       {isOpen && (
         <div
           className="fixed inset-0 z-50 flex items-start justify-end p-4 bg-slate-950/20 backdrop-blur-[2px]"
@@ -162,10 +201,14 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200 dark:border-slate-800">
               <div>
                 <h3 className="font-black text-base text-slate-900 dark:text-white">
-                  Navigasi Soal TKA Matematika (1–25)
+                  {activePaket === 1
+                    ? 'Navigasi Paket 1 — TKA Matematika (25 Soal)'
+                    : 'Navigasi Paket 2 — TKA Matematika (9 Soal)'}
                 </h3>
                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Pilih nomor untuk loncat langsung ke soal yang diinginkan
+                  {activePaket === 1
+                    ? 'Nomor urut 1–25'
+                    : 'Nomor asli: 8, 10, 12, 14, 15, 16, 17, 22, 23'}
                 </p>
               </div>
               <button
@@ -177,9 +220,37 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
               </button>
             </div>
 
-            {/* Grid 1 - 25 (5x5 Grid) */}
+            {/* Paket Switcher inside Drawer */}
+            <div className="grid grid-cols-2 gap-2 mb-3.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+              <button
+                type="button"
+                onClick={() => onChangePaket(1)}
+                className={`py-2 px-3 rounded-lg font-extrabold text-xs flex items-center justify-center gap-1.5 transition ${
+                  activePaket === 1
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Paket 1 (25 Soal)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangePaket(2)}
+                className={`py-2 px-3 rounded-lg font-extrabold text-xs flex items-center justify-center gap-1.5 transition ${
+                  activePaket === 2
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Paket 2 (9 Soal Baru)</span>
+              </button>
+            </div>
+
+            {/* Number Grid */}
             <div className="grid grid-cols-5 gap-2 mb-4" data-number-grid>
-              {Array.from({ length: totalQuestions }, (_, i) => i + 1).map((num) => {
+              {questionIds.map((num) => {
                 const isActive = num === currentQuestionId;
                 const ans = answers[num];
                 const hasAnswer =
@@ -193,7 +264,7 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
                     key={num}
                     type="button"
                     onClick={() => {
-                      onSelectQuestion(num);
+                      onSelectQuestionId(num);
                       setIsOpen(false);
                     }}
                     className={`relative h-11 rounded-xl font-extrabold text-base flex items-center justify-center transition-all active:scale-95 ${
@@ -292,16 +363,28 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
                 </button>
               </div>
 
-              {/* Download PDF Handout Button */}
-              <a
-                href={`${import.meta.env.BASE_URL}25-Soal-TKA-Matematika-Wajib-Gelombang-1.pdf`}
-                download="25-Soal-TKA-Matematika-Wajib-Gelombang-1.pdf"
-                data-download-pdf
-                className="w-full py-2.5 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition"
-              >
-                <FileDown className="w-4 h-4" />
-                <span>Unduh PDF Naskah Soal (4 Halaman A4)</span>
-              </a>
+              {/* Download PDF Handout Buttons */}
+              {activePaket === 1 ? (
+                <a
+                  href={`${import.meta.env.BASE_URL}25-Soal-TKA-Matematika-Wajib-Gelombang-1.pdf`}
+                  download="25-Soal-TKA-Matematika-Wajib-Gelombang-1.pdf"
+                  data-download-pdf
+                  className="w-full py-2.5 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span>Unduh PDF Paket 1 — 25 Soal (4 Halaman A4)</span>
+                </a>
+              ) : (
+                <a
+                  href={`${import.meta.env.BASE_URL}9-Soal-Tambahan-TKA-Matematika-Wajib-Gelombang-1.pdf`}
+                  download="9-Soal-Tambahan-TKA-Matematika-Wajib-Gelombang-1.pdf"
+                  data-download-pdf
+                  className="w-full py-2.5 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span>Unduh PDF Paket 2 — 9 Soal (4 Halaman A4)</span>
+                </a>
+              )}
 
               <div className="flex items-center justify-between pt-1">
                 <button

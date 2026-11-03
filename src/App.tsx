@@ -1,27 +1,40 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { questionsData } from './data/questionsData';
+import { paket2QuestionsData } from './data/paket2QuestionsData';
 import { UserAnswerState } from './types/question';
 import { FloatingMenu } from './components/FloatingMenu';
 import { QuestionView } from './components/QuestionView';
 import { SolutionModal } from './components/SolutionModal';
 import { PdfHandoutView } from './components/PdfHandoutView';
 
-const STORAGE_KEY = 'tka_mtk_wajib_gel1_answers';
+const STORAGE_KEY_P1 = 'tka_mtk_wajib_gel1_answers';
+const STORAGE_KEY_P2 = 'tka_mtk_wajib_gel1_paket2_answers';
 
 export const App: React.FC = () => {
-  const isPdfMode =
-    typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).get('mode') === 'pdf';
+  const searchParams =
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isPdfMode = searchParams?.get('mode') === 'pdf';
+  const initialPaket: 1 | 2 = searchParams?.get('paket') === '2' ? 2 : 1;
 
   if (isPdfMode) {
-    return <PdfHandoutView />;
+    return <PdfHandoutView paket={initialPaket} />;
   }
 
+  const [activePaket, setActivePaket] = useState<1 | 2>(initialPaket);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
 
-  const [answers, setAnswers] = useState<UserAnswerState>(() => {
+  const [answersP1, setAnswersP1] = useState<UserAnswerState>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(STORAGE_KEY_P1);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [answersP2, setAnswersP2] = useState<UserAnswerState>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_P2);
       return saved ? JSON.parse(saved) : {};
     } catch {
       return {};
@@ -36,13 +49,25 @@ export const App: React.FC = () => {
   const [showSolutionModal, setShowSolutionModal] = useState<boolean>(false);
   const [showAnswerKey, setShowAnswerKey] = useState<boolean>(false);
 
+  const activeQuestions = activePaket === 2 ? paket2QuestionsData : questionsData;
+  const answers = activePaket === 2 ? answersP2 : answersP1;
+  const setAnswers = activePaket === 2 ? setAnswersP2 : setAnswersP1;
+
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(answers));
+      localStorage.setItem(STORAGE_KEY_P1, JSON.stringify(answersP1));
     } catch (e) {
-      console.error('Failed to save answers to localStorage', e);
+      console.error('Failed to save Paket 1 answers to localStorage', e);
     }
-  }, [answers]);
+  }, [answersP1]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_P2, JSON.stringify(answersP2));
+    } catch (e) {
+      console.error('Failed to save Paket 2 answers to localStorage', e);
+    }
+  }, [answersP2]);
 
   useEffect(() => {
     if (darkMode) {
@@ -60,23 +85,41 @@ export const App: React.FC = () => {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  const handleChangePaket = useCallback((paket: 1 | 2) => {
+    setShowSolutionModal(false);
+    setActivePaket(paket);
+    setCurrentIndex(0);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (paket === 2) {
+        url.searchParams.set('paket', '2');
+      } else {
+        url.searchParams.delete('paket');
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, []);
+
   const goToNext = useCallback(() => {
     setShowSolutionModal(false);
-    setCurrentIndex((prev) => (prev < questionsData.length - 1 ? prev + 1 : prev));
-  }, []);
+    setCurrentIndex((prev) => (prev < activeQuestions.length - 1 ? prev + 1 : prev));
+  }, [activeQuestions.length]);
 
   const goToPrev = useCallback(() => {
     setShowSolutionModal(false);
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : prev));
   }, []);
 
-  const goToQuestion = useCallback((questionNumber: number) => {
-    const idx = questionNumber - 1;
-    if (idx >= 0 && idx < questionsData.length) {
-      setShowSolutionModal(false);
-      setCurrentIndex(idx);
-    }
-  }, []);
+  const goToQuestionId = useCallback(
+    (questionId: number) => {
+      const idx = activeQuestions.findIndex((q) => q.id === questionId);
+      if (idx >= 0 && idx < activeQuestions.length) {
+        setShowSolutionModal(false);
+        setCurrentIndex(idx);
+      }
+    },
+    [activeQuestions]
+  );
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -126,8 +169,10 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [goToNext, goToPrev, toggleFullscreen, showSolutionModal]);
 
-  const currentQuestion = questionsData[currentIndex];
+  const safeIndex = Math.min(currentIndex, activeQuestions.length - 1);
+  const currentQuestion = activeQuestions[safeIndex];
   const currentAnswer = answers[currentQuestion.id] || {};
+  const questionIds = activeQuestions.map((q) => q.id);
 
   const handleSelectOption = (key: string) => {
     setAnswers((prev) => ({
@@ -179,9 +224,9 @@ export const App: React.FC = () => {
   };
 
   const handleResetAllAnswers = () => {
-    if (window.confirm('Reset semua pilihan jawaban kelas yang tersimpan?')) {
+    if (window.confirm(`Reset semua pilihan jawaban Paket ${activePaket} yang tersimpan?`)) {
       setAnswers({});
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(activePaket === 2 ? STORAGE_KEY_P2 : STORAGE_KEY_P1);
     }
   };
 
@@ -189,9 +234,12 @@ export const App: React.FC = () => {
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 relative">
       {/* Floating Auto-Hide / Collapsible Control Pill (No permanent header/footer) */}
       <FloatingMenu
+        activePaket={activePaket}
+        onChangePaket={handleChangePaket}
+        currentIndex={safeIndex}
         currentQuestionId={currentQuestion.id}
-        totalQuestions={questionsData.length}
-        onSelectQuestion={goToQuestion}
+        questionIds={questionIds}
+        onSelectQuestionId={goToQuestionId}
         onPrev={goToPrev}
         onNext={goToNext}
         answers={answers}
@@ -215,7 +263,7 @@ export const App: React.FC = () => {
       {/* Full-Screen Question Viewport */}
       <main className="flex-1 w-full h-full overflow-hidden relative">
         <QuestionView
-          key={currentQuestion.id}
+          key={`${activePaket}-${currentQuestion.id}`}
           question={currentQuestion}
           fontSizeLevel={fontSizeLevel}
           selectedOption={currentAnswer.selectedOption}
