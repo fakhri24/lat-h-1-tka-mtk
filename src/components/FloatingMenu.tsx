@@ -382,7 +382,7 @@ export const FloatingMenu: React.FC<FloatingMenuProps> = ({
                   className="w-full py-2.5 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition"
                 >
                   <FileDown className="w-4 h-4" />
-                  <span>Unduh PDF Paket 2 — 9 Soal (4 Halaman A4)</span>
+                  <span>Unduh PDF Paket 2 — 9 Soal (2 Halaman A4)</span>
                 </a>
               )}
 
